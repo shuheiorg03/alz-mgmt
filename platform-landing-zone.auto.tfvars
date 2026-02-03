@@ -60,8 +60,8 @@ custom_replacements = {
     primary_virtual_network_gateway_express_route_enabled                = false
     primary_virtual_network_gateway_express_route_hobo_public_ip_enabled = false
     primary_virtual_network_gateway_vpn_enabled                          = false
-    primary_private_dns_zones_enabled                                    = false
-    primary_private_dns_auto_registration_zone_enabled                   = false
+    primary_private_dns_zones_enabled                                    = true
+    primary_private_dns_auto_registration_zone_enabled                   = true
     primary_private_dns_resolver_enabled                                 = false
     primary_bastion_enabled                                              = false
 
@@ -71,8 +71,8 @@ custom_replacements = {
     secondary_virtual_network_gateway_express_route_enabled                = false
     secondary_virtual_network_gateway_express_route_hobo_public_ip_enabled = false
     secondary_virtual_network_gateway_vpn_enabled                          = false
-    secondary_private_dns_zones_enabled                                    = false
-    secondary_private_dns_auto_registration_zone_enabled                   = false
+    secondary_private_dns_zones_enabled                                    = true
+    secondary_private_dns_auto_registration_zone_enabled                   = true
     secondary_private_dns_resolver_enabled                                 = false
     secondary_bastion_enabled                                              = false
 
@@ -117,13 +117,13 @@ custom_replacements = {
     secondary_auto_registration_zone_name = "$${starter_location_02}.azure.local"
 
     # IP Ranges Primary
-    # Regional Address Space: 10.100.0.0/16
-    primary_hub_address_space                          = "10.100.0.0/16"
-    primary_hub_virtual_network_address_space          = "10.100.0.0/22"
-    primary_firewall_subnet_address_prefix             = "10.100.0.0/26"
-    primary_firewall_management_subnet_address_prefix  = "10.100.0.192/26"
-    primary_bastion_subnet_address_prefix              = "10.100.0.64/26"
-    primary_gateway_subnet_address_prefix              = "10.100.0.128/27"
+    # Regional Address Space: 10.0.0.0/16
+    primary_hub_address_space                          = "10.0.0.0/16"
+    primary_hub_virtual_network_address_space          = "10.0.0.0/22"
+    primary_firewall_subnet_address_prefix             = "10.0.0.0/26"
+    primary_firewall_management_subnet_address_prefix  = "10.0.0.192/26"
+    primary_bastion_subnet_address_prefix              = "10.0.0.64/26"
+    primary_gateway_subnet_address_prefix              = "10.0.0.128/27"
     primary_private_dns_resolver_subnet_address_prefix = "10.0.0.160/28"
 
     # IP Ranges Secondary
