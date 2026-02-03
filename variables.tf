@@ -121,3 +121,25 @@ telemetry_additional_content = {
 }
 DESCRIPTION
 }
+
+# ========================================
+# Subscription Vending用の変数を追加
+# ========================================
+
+variable "billing_account_name" {
+  type        = string
+  description = "The Billing Account name for MCA subscription creation"
+  default     = null
+}
+
+variable "billing_profile_name" {
+  type        = string
+  description = "The Billing Profile name for MCA subscription creation"
+  default     = null
+}
+
+variable "invoice_section_name" {
+  type        = string
+  description = "The Invoice Section name for MCA subscription creation"
+  default     = null
+}
