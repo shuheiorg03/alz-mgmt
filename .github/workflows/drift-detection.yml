@@ -12,7 +12,7 @@ permissions:
 
 jobs:
   drift-check:
-    uses: shuheiorg02/alz-mgmt-templates/.github/workflows/ci-template.yaml@main
+    uses: shuheiorg03/alz-mgmt-templates/.github/workflows/ci-template.yaml@main
     permissions:
       id-token: write
       contents: read
