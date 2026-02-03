@@ -1,0 +1,103 @@
+name: Drift Detection
+
+on:
+  schedule:
+    - cron: '0 0 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write
+  issues: write
+
+jobs:
+  drift-check:
+    uses: shuheiorg02/alz-mgmt-templates/.github/workflows/ci-template.yaml@main
+    permissions:
+      id-token: write
+      contents: read
+      pull-requests: write
+    with:
+      root_module_folder_relative_path: '.'
+      terraform_cli_version: 'latest'
+
+  analyze-drift:
+    needs: drift-check
+    if: always()
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+      actions: read
+    steps:
+      - name: Check for Drift in Logs
+        id: check
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const jobs = await github.rest.actions.listJobsForWorkflowRun({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              run_id: context.runId,
+            });
+
+            console.log(`Found ${jobs.data.jobs.length} jobs`);
+            jobs.data.jobs.forEach(j => console.log(`Job: ${j.name} (${j.conclusion})`));
+
+            const planJob = jobs.data.jobs.find(j => j.name.includes('Validate Terraform Plan'));
+            if (!planJob) {
+              console.log('❌ Plan job not found');
+              core.setOutput('drift_detected', 'false');
+              return;
+            }
+
+            console.log(`✅ Found plan job: ${planJob.name} (ID: ${planJob.id})`);
+
+            const logs = await github.rest.actions.downloadJobLogsForWorkflowRun({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              job_id: planJob.id,
+            });
+
+            const logText = typeof logs.data === 'string' ? logs.data : String(logs.data);
+            console.log(`Log size: ${logText.length} characters`);
+
+            // ANSIエスケープシーケンスを除去
+            const cleanedLog = logText.replace(/\x1b\[[0-9;]*m/g, '');
+            console.log(`Cleaned log size: ${cleanedLog.length} characters`);
+
+            // ログサンプルを出力
+            const planIndex = cleanedLog.indexOf('Plan:');
+            if (planIndex !== -1) {
+              console.log(`Found "Plan:" at position ${planIndex}`);
+              const sample = cleanedLog.substring(planIndex, planIndex + 100);
+              console.log('Sample around Plan:', sample);
+            }
+
+            // より柔軟な正規表現: 改行やタイムスタンプを含む可能性に対応
+            // "Plan: 0 to add,\n 1 to change, 0 to destroy." のような複数行にも対応
+            const planMatch = cleanedLog.match(/Plan:\s*(\d+)\s+to\s+add,\s*(\d+)\s+to\s+change,\s*(\d+)\s+to\s+destroy/is);
+
+            if (planMatch) {
+              const [, add, change, destroy] = planMatch;
+              console.log(`📊 Plan match: ${add} to add, ${change} to change, ${destroy} to destroy`);
+              const hasChanges = parseInt(add) > 0 || parseInt(change) > 0 || parseInt(destroy) > 0;
+
+              if (hasChanges) {
+                console.log('✅ Drift detected!');
+                core.setOutput('drift_detected', 'true');
+                core.setOutput('changes', `${add} to add, ${change} to change, ${destroy} to destroy`);
+                return;
+              } else {
+                console.log('✅ No changes detected');
+              }
+            } else {
+              console.log('❌ No plan match found in logs');
+            }
+
+            core.setOutput('drift_detected', 'false');
+
+      - name: Log Drift Detection
+        if: steps.check.outputs.drift_detected == 'true'
+        run: |
+          echo "::warning::🚨 Configuration Drift検出: ${{ steps.check.outputs.changes }}"
+          echo "詳細: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
