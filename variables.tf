@@ -143,3 +143,21 @@ variable "invoice_section_name" {
   description = "The Invoice Section name for MCA subscription creation"
   default     = null
 }
+
+variable "hub_virtual_network_id" {
+  type        = string
+  description = "The resource ID of the hub virtual network. Used as fallback when hub_and_spoke_vnet module is not deployed."
+  default     = null
+}
+
+variable "hub_virtual_network_name" {
+  type        = string
+  description = "The name of the hub virtual network. Used as fallback when hub_and_spoke_vnet module is not deployed."
+  default     = null
+}
+
+variable "hub_virtual_network_resource_group_name" {
+  type        = string
+  description = "The resource group name of the hub virtual network. Used as fallback when hub_and_spoke_vnet module is not deployed."
+  default     = null
+}
