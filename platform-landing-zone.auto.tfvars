@@ -424,11 +424,11 @@ hub_virtual_networks = {
       name                  = "$${primary_private_dns_resolver_name}"
     }
     bastion = {
-      zones = [] # ←追加
+      zones = []
       subnet_address_prefix = "$${primary_bastion_subnet_address_prefix}"
       name                  = "$${primary_bastion_host_name}"
       bastion_public_ip = {
-        zones = [] # ←追加
+        zones = []
         name = "$${primary_bastion_host_public_ip_name}"
       }
     }
@@ -516,11 +516,11 @@ hub_virtual_networks = {
       name                  = "$${secondary_private_dns_resolver_name}"
     }
     bastion = {
-      zones = [] # ←追加
+      zones = []
       subnet_address_prefix = "$${secondary_bastion_subnet_address_prefix}"
       name                  = "$${secondary_bastion_host_name}"
       bastion_public_ip = {
-        zones = [] # ←追加
+        zones = []
         name = "$${secondary_bastion_host_public_ip_name}"
       }
     }
