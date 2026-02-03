@@ -124,7 +124,7 @@ custom_replacements = {
     primary_firewall_management_subnet_address_prefix  = "10.100.0.192/26"
     primary_bastion_subnet_address_prefix              = "10.100.0.64/26"
     primary_gateway_subnet_address_prefix              = "10.100.0.128/27"
-    # primary_private_dns_resolver_subnet_address_prefix = "10.100.0.160/28"
+    # primary_private_dns_resolver_subnet_address_prefix
 
     # IP Ranges Secondary
     # Regional Address Space: 10.1.0.0/16
@@ -134,7 +134,7 @@ custom_replacements = {
     secondary_firewall_management_subnet_address_prefix  = "10.1.0.192/26"
     secondary_bastion_subnet_address_prefix              = "10.1.0.64/26"
     secondary_gateway_subnet_address_prefix              = "10.1.0.128/27"
-    # secondary_private_dns_resolver_subnet_address_prefix = "10.1.0.160/28"
+    # secondary_private_dns_resolver_subnet_address_prefix
   }
 
   /*
