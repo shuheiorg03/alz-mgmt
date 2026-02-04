@@ -49,7 +49,29 @@ resource "azurerm_subscription" "this" {
   }
 }
 
-# 手順5: 管理グループへの関連付け
+# 手順5: Subscription Alias に対するロール割り当て
+# Plan と Apply の Service Principal に Owner 権限を付与
+resource "azurerm_role_assignment" "alias_plan" {
+  for_each = local.subscriptions
+
+  scope                = "/providers/Microsoft.Subscription/aliases/${each.key}"
+  role_definition_name = "Owner"
+  principal_id         = var.plan_service_principal_object_id
+
+  depends_on = [azurerm_subscription.this]
+}
+
+resource "azurerm_role_assignment" "alias_apply" {
+  for_each = local.subscriptions
+
+  scope                = "/providers/Microsoft.Subscription/aliases/${each.key}"
+  role_definition_name = "Owner"
+  principal_id         = var.apply_service_principal_object_id
+
+  depends_on = [azurerm_subscription.this]
+}
+
+# 手順6: 管理グループへの関連付け
 resource "azurerm_management_group_subscription_association" "this" {
   for_each = local.subscriptions
 
@@ -74,19 +96,29 @@ locals {
   ]...)
 }
 
-resource "azurerm_resource_group" "this" {
+resource "azapi_resource" "resource_group" {
   for_each = local.subscription_resource_groups
 
-  name     = each.value.name
-  location = each.value.location
-  tags     = each.value.tags
+  type      = "Microsoft.Resources/resourceGroups@2024-03-01"
+  name      = each.value.name
+  location  = each.value.location
+  parent_id = "/subscriptions/${each.value.subscription_id}"
 
-  # プロバイダーエイリアスは使用せず、subscription_idで制御
+  body = {
+    properties = {}
+  }
+
+  tags = each.value.tags
+
   lifecycle {
     ignore_changes = [tags]
   }
 
-  depends_on = [azurerm_subscription.this]
+  depends_on = [
+    azurerm_subscription.this,
+    azurerm_role_assignment.alias_plan,
+    azurerm_role_assignment.alias_apply
+  ]
 }
 
 # 手順7: VNetの作成
@@ -103,17 +135,26 @@ locals {
   }
 }
 
-resource "azurerm_virtual_network" "this" {
+resource "azapi_resource" "virtual_network" {
   for_each = local.vnets
 
-  name                = each.value.name
-  location            = each.value.location
-  resource_group_name = each.value.resource_group_name
-  address_space       = each.value.address_space
-  tags                = each.value.tags
+  type      = "Microsoft.Network/virtualNetworks@2024-01-01"
+  name      = each.value.name
+  location  = each.value.location
+  parent_id = "/subscriptions/${each.value.subscription_id}/resourceGroups/${each.value.resource_group_name}"
+
+  body = {
+    properties = {
+      addressSpace = {
+        addressPrefixes = each.value.address_space
+      }
+    }
+  }
+
+  tags = each.value.tags
 
   depends_on = [
-    azurerm_resource_group.this,
+    azapi_resource.resource_group,
     azurerm_subscription.this
   ]
 }
@@ -135,15 +176,20 @@ locals {
   ]...)
 }
 
-resource "azurerm_subnet" "this" {
+resource "azapi_resource" "subnet" {
   for_each = local.subnets
 
-  name                 = each.value.name
-  resource_group_name  = each.value.resource_group_name
-  virtual_network_name = each.value.vnet_name
-  address_prefixes     = [each.value.address_prefix]
+  type      = "Microsoft.Network/virtualNetworks/subnets@2024-01-01"
+  name      = each.value.name
+  parent_id = "/subscriptions/${each.value.subscription_id}/resourceGroups/${each.value.resource_group_name}/providers/Microsoft.Network/virtualNetworks/${each.value.vnet_name}"
 
-  depends_on = [azurerm_virtual_network.this]
+  body = {
+    properties = {
+      addressPrefix = each.value.address_prefix
+    }
+  }
+
+  depends_on = [azapi_resource.virtual_network]
 }
 
 # 手順9: Hub VNetへのピアリング
@@ -171,36 +217,48 @@ locals {
 }
 
 # Spoke → Hub のピアリング
-resource "azurerm_virtual_network_peering" "spoke_to_hub" {
+resource "azapi_resource" "spoke_to_hub_peering" {
   for_each = local.vnet_peerings
 
-  name                      = "${each.value.name}-to-hub"
-  resource_group_name       = each.value.resource_group_name
-  virtual_network_name      = each.value.name
-  remote_virtual_network_id = local.hub_vnet_id
+  type      = "Microsoft.Network/virtualNetworks/virtualNetworkPeerings@2024-01-01"
+  name      = "${each.value.name}-to-hub"
+  parent_id = "/subscriptions/${each.value.subscription_id}/resourceGroups/${each.value.resource_group_name}/providers/Microsoft.Network/virtualNetworks/${each.value.name}"
 
-  allow_virtual_network_access = true
-  allow_forwarded_traffic      = true
-  allow_gateway_transit        = false
-  use_remote_gateways          = lookup(each.value, "use_hub_gateway", false)
+  body = {
+    properties = {
+      remoteVirtualNetwork = {
+        id = local.hub_vnet_id
+      }
+      allowVirtualNetworkAccess = true
+      allowForwardedTraffic     = true
+      allowGatewayTransit       = false
+      useRemoteGateways         = lookup(each.value, "use_hub_gateway", false)
+    }
+  }
 
-  depends_on = [azurerm_virtual_network.this]
+  depends_on = [azapi_resource.virtual_network]
 }
 
 # Hub → Spoke のピアリング（connectivityサブスクリプションのプロバイダーを使用）
-resource "azurerm_virtual_network_peering" "hub_to_spoke" {
-  provider = azurerm.connectivity
+resource "azapi_resource" "hub_to_spoke_peering" {
+  provider  = azapi.connectivity
   for_each = local.vnet_peerings
 
-  name                      = "hub-to-${each.value.name}"
-  resource_group_name       = local.hub_vnet_resource_group
-  virtual_network_name      = local.hub_vnet_name
-  remote_virtual_network_id = azurerm_virtual_network.this[each.key].id
+  type      = "Microsoft.Network/virtualNetworks/virtualNetworkPeerings@2024-01-01"
+  name      = "hub-to-${each.value.name}"
+  parent_id = local.hub_vnet_id
 
-  allow_virtual_network_access = true
-  allow_forwarded_traffic      = true
-  allow_gateway_transit        = lookup(each.value, "use_hub_gateway", false)
-  use_remote_gateways          = false
+  body = {
+    properties = {
+      remoteVirtualNetwork = {
+        id = "/subscriptions/${each.value.subscription_id}/resourceGroups/${each.value.resource_group_name}/providers/Microsoft.Network/virtualNetworks/${each.value.name}"
+      }
+      allowVirtualNetworkAccess = true
+      allowForwardedTraffic     = true
+      allowGatewayTransit       = lookup(each.value, "use_hub_gateway", false)
+      useRemoteGateways         = false
+    }
+  }
 
-  depends_on = [azurerm_virtual_network.this]
+  depends_on = [azapi_resource.virtual_network]
 }
