@@ -187,8 +187,9 @@ resource "azurerm_virtual_network_peering" "spoke_to_hub" {
   depends_on = [azurerm_virtual_network.this]
 }
 
-# Hub → Spoke のピアリング
+# Hub → Spoke のピアリング（connectivityサブスクリプションのプロバイダーを使用）
 resource "azurerm_virtual_network_peering" "hub_to_spoke" {
+  provider = azurerm.connectivity
   for_each = local.vnet_peerings
 
   name                      = "hub-to-${each.value.name}"

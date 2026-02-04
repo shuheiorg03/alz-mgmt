@@ -21,7 +21,7 @@ virtual_network:
   resource_group_name: "rg-test-network"
   address_space: ["10.200.0.0/16"]
   hub_peering_enabled: true
-  use_hub_gateway: true
+  use_hub_gateway: false
   subnets:
     - name: "snet-app"
       address_prefix: "10.200.1.0/24"
