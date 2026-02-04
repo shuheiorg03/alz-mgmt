@@ -43,6 +43,14 @@ resource "azurerm_subscription" "this" {
 
   tags = lookup(each.value, "tags", {})
 
+  # サブスクリプション作成は時間がかかるため、タイムアウトを延長
+  timeouts {
+    create = "60m"
+    read   = "5m"
+    update = "60m"
+    delete = "60m"
+  }
+
   # ライフサイクル: サブスクリプションは削除せず、管理グループのみ変更可能
   lifecycle {
     prevent_destroy = true
