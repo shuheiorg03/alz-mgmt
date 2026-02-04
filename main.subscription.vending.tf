@@ -37,10 +37,10 @@ data "azurerm_billing_mca_account_scope" "this" {
 resource "azapi_resource" "subscription" {
   for_each = local.subscriptions
 
-  type = "Microsoft.Subscription/aliases@2021-10-01"
-  name = each.key
+  type      = "Microsoft.Subscription/aliases@2021-10-01"
+  name      = each.key
   parent_id = "/"
-  
+
   body = {
     properties = {
       displayName  = each.value.display_name
@@ -52,7 +52,7 @@ resource "azapi_resource" "subscription" {
       }
     }
   }
-  
+
   response_export_values = ["properties.subscriptionId"]
 
   lifecycle {
@@ -228,7 +228,7 @@ resource "azapi_resource" "hub_to_spoke_peering" {
 
   type      = "Microsoft.Network/virtualNetworks/virtualNetworkPeerings@2023-05-01"
   name      = "hub-to-${each.value.name}"
-  parent_id = "${local.hub_vnet_id}"
+  parent_id = local.hub_vnet_id
 
   body = {
     properties = {
