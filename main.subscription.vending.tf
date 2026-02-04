@@ -50,23 +50,14 @@ resource "azurerm_subscription" "this" {
 }
 
 # 手順5: Subscription Alias に対するロール割り当て
-# Plan と Apply の Service Principal に Owner 権限を付与
+# Plan Service Principal に Owner 権限を付与
+# Apply SPはサブスクリプション作成者として自動的にOwnerになるため不要
 resource "azurerm_role_assignment" "alias_plan" {
   for_each = local.subscriptions
 
   scope                = "/providers/Microsoft.Subscription/aliases/${each.key}"
   role_definition_name = "Owner"
   principal_id         = var.plan_service_principal_object_id
-
-  depends_on = [azurerm_subscription.this]
-}
-
-resource "azurerm_role_assignment" "alias_apply" {
-  for_each = local.subscriptions
-
-  scope                = "/providers/Microsoft.Subscription/aliases/${each.key}"
-  role_definition_name = "Owner"
-  principal_id         = var.apply_service_principal_object_id
 
   depends_on = [azurerm_subscription.this]
 }
@@ -116,8 +107,7 @@ resource "azapi_resource" "resource_group" {
 
   depends_on = [
     azurerm_subscription.this,
-    azurerm_role_assignment.alias_plan,
-    azurerm_role_assignment.alias_apply
+    azurerm_role_assignment.alias_plan
   ]
 }
 
