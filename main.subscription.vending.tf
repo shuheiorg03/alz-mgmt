@@ -37,8 +37,7 @@ resource "azurerm_subscription" "this" {
   for_each = local.subscriptions
 
   subscription_name = each.value.display_name
-  alias             = each.key
-  billing_scope_id  = data.azurerm_billing_mca_account_scope.this[0].id
+  billing_scope_id  = data.azurerm_billing_mca_account_scope.this.id
   workload          = lookup(each.value, "workload_type", "Production")
 
   tags = lookup(each.value, "tags", {})
