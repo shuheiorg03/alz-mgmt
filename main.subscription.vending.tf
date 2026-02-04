@@ -204,9 +204,9 @@ locals {
     sub_key => merge(sub.virtual_network, {
       subscription_key = sub_key
     })
-    if lookup(sub, "virtual_network", null) != null && 
-       lookup(sub.virtual_network, "hub_peering_enabled", false) && 
-       local.hub_vnet_id != null
+    if lookup(sub, "virtual_network", null) != null &&
+    lookup(sub.virtual_network, "hub_peering_enabled", false) &&
+    local.hub_vnet_id != null
   }
 }
 
