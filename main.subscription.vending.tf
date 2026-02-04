@@ -42,11 +42,6 @@ resource "azurerm_subscription" "this" {
   workload          = lookup(each.value, "workload_type", "Production")
 
   tags = lookup(each.value, "tags", {})
-
-  # ライフサイクル: サブスクリプションは削除せず、管理グループのみ変更可能
-  lifecycle {
-    prevent_destroy = true
-  }
 }
 
 # 手順5: Subscription Alias に対するロール割り当て
