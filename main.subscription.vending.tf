@@ -231,7 +231,7 @@ resource "azapi_resource" "spoke_to_hub_peering" {
 
 # Hub → Spoke のピアリング（connectivityサブスクリプションのプロバイダーを使用）
 resource "azapi_resource" "hub_to_spoke_peering" {
-  provider  = azapi.connectivity
+  provider = azapi.connectivity
   for_each = local.vnet_peerings
 
   type      = "Microsoft.Network/virtualNetworks/virtualNetworkPeerings@2024-01-01"
