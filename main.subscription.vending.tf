@@ -1,7 +1,5 @@
 # ========================================
 # Terraformのサブスクリプションリソースの実装
-# モジュールを使わず、azurerm_subscriptionリソースを使用
-# ALZモジュールとの互換性維持のため
 # ========================================
 
 locals {
@@ -17,7 +15,6 @@ locals {
 }
 
 # 手順3: 管理グループIDの取得
-# ALZ管理グループモジュールの実行後にデータソースを参照するため depends_on を追加
 data "azurerm_management_group" "subscription_target" {
   for_each = local.subscriptions
 
@@ -50,8 +47,6 @@ resource "azurerm_subscription" "this" {
 }
 
 # 手順5: Subscription Alias に対するロール割り当て
-# Plan Service Principal に Owner 権限を付与
-# Apply SPはサブスクリプション作成者として自動的にOwnerになるため不要
 resource "azurerm_role_assignment" "alias_plan" {
   for_each = local.subscriptions
 
@@ -72,7 +67,7 @@ resource "azurerm_management_group_subscription_association" "this" {
   depends_on = [azurerm_subscription.this]
 }
 
-# 手順6: リソースグループの作成
+# 手順7: リソースグループの作成
 locals {
   # 全サブスクリプションのリソースグループをフラット化
   subscription_resource_groups = merge([
@@ -111,7 +106,7 @@ resource "azapi_resource" "resource_group" {
   ]
 }
 
-# 手順7: VNetの作成
+# 手順8: VNetの作成
 locals {
   # VNetが定義されているサブスクリプションを抽出
   vnets = {
@@ -149,7 +144,7 @@ resource "azapi_resource" "virtual_network" {
   ]
 }
 
-# 手順8: サブネットの作成
+# 手順9: サブネットの作成
 locals {
   # 全VNetのサブネットをフラット化
   subnets = merge([
@@ -182,7 +177,7 @@ resource "azapi_resource" "subnet" {
   depends_on = [azapi_resource.virtual_network]
 }
 
-# 手順9: Hub VNetへのピアリング
+# 手順10: Hub VNetへのピアリング
 locals {
   # Hub接続が必要なVNetを抽出
   # Hub VNet情報は既存のhub_and_spoke_vnetモジュールから自動取得
