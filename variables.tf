@@ -161,3 +161,15 @@ variable "hub_virtual_network_resource_group_name" {
   description = "The resource group name of the hub virtual network. Used as fallback when hub_and_spoke_vnet module is not deployed."
   default     = null
 }
+
+variable "plan_service_principal_object_id" {
+  type        = string
+  description = "The Object ID of the Plan Service Principal used for Terraform Plan operations. This principal will be granted Owner role on Subscription Aliases."
+  default     = null
+}
+
+variable "apply_service_principal_object_id" {
+  type        = string
+  description = "The Object ID of the Apply Service Principal used for Terraform Apply operations. This principal will be granted Owner role on Subscription Aliases."
+  default     = null
+}
