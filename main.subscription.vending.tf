@@ -17,10 +17,15 @@ locals {
 }
 
 # 手順3: 管理グループIDの取得
+# ALZ管理グループモジュールの実行後にデータソースを参照するため depends_on を追加
 data "azurerm_management_group" "subscription_target" {
   for_each = local.subscriptions
 
   name = each.value.management_group_id
+
+  depends_on = [
+    module.management_groups
+  ]
 }
 
 # データソースでBilling Scopeを取得
@@ -195,9 +200,13 @@ locals {
   )
 
   vnet_peerings = {
-    for sub_key, vnet in local.vnets :
-    sub_key => vnet
-    if lookup(vnet, "hub_peering_enabled", false) && local.hub_vnet_id != null
+    for sub_key, sub in local.subscriptions :
+    sub_key => merge(sub.virtual_network, {
+      subscription_key = sub_key
+    })
+    if lookup(sub, "virtual_network", null) != null && 
+       lookup(sub.virtual_network, "hub_peering_enabled", false) && 
+       local.hub_vnet_id != null
   }
 }
 
@@ -207,7 +216,7 @@ resource "azapi_resource" "spoke_to_hub_peering" {
 
   type      = "Microsoft.Network/virtualNetworks/virtualNetworkPeerings@2024-01-01"
   name      = "${each.value.name}-to-hub"
-  parent_id = "/subscriptions/${each.value.subscription_id}/resourceGroups/${each.value.resource_group_name}/providers/Microsoft.Network/virtualNetworks/${each.value.name}"
+  parent_id = "/subscriptions/${azurerm_subscription.this[each.value.subscription_key].subscription_id}/resourceGroups/${each.value.resource_group_name}/providers/Microsoft.Network/virtualNetworks/${each.value.name}"
 
   body = {
     properties = {
@@ -236,7 +245,7 @@ resource "azapi_resource" "hub_to_spoke_peering" {
   body = {
     properties = {
       remoteVirtualNetwork = {
-        id = "/subscriptions/${each.value.subscription_id}/resourceGroups/${each.value.resource_group_name}/providers/Microsoft.Network/virtualNetworks/${each.value.name}"
+        id = "/subscriptions/${azurerm_subscription.this[each.value.subscription_key].subscription_id}/resourceGroups/${each.value.resource_group_name}/providers/Microsoft.Network/virtualNetworks/${each.value.name}"
       }
       allowVirtualNetworkAccess = true
       allowForwardedTraffic     = true
